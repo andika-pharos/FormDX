@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}History - {{ trial.master_batch_id or trial.trial_code }} | FormDX{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-clock-history me-2"></i>History Perubahan</h2>
+        <p class="text-muted mb-0">
+            No Formula: <strong>{{ trial.master_batch_id or trial.trial_code }}</strong><br>
+            Nama Produk: {{ trial.project_name | upper }}
+        </p>
+    </div>
+    <a href="{{ url_for('trial_detail', trial_id=trial.id) }}" class="btn btn-outline-secondary">Kembali ke Detail</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <strong>Riwayat Perubahan Trial</strong>
+    </div>
+    <div class="card-body p-0">
+        {% if history %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Waktu</th>
+                            <th>Aksi</th>
+                            <th>Oleh</th>
+                            <th>Perubahan</th>
+                            <th>Catatan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in history %}
+                        <tr>
+                            <td><small>{{ h.changed_at[:16] if h.changed_at else '-' }}</small></td>
+                            <td>
+                                {% if h.action == 'CREATE' %}
+                                    <span class="badge bg-success">Dibuat</span>
+                                {% elif h.action == 'UPDATE' %}
+                                    <span class="badge bg-primary">Diperbarui</span>
+                                {% elif h.action == 'DELETE' %}
+                                    <span class="badge bg-danger">Dihapus</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ h.action }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ h.changed_by or '-' }}</td>
+                            <td>
+                                {% if h.old_data and h.new_data %}
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                            data-bs-toggle="collapse" data-bs-target="#changes-{{ h.id }}">
+                                        Lihat Perubahan
+                                    </button>
+                                    <div class="collapse mt-2" id="changes-{{ h.id }}">
+                                        <div class="card card-body small">
+                                            <strong>Sebelum:</strong><br>
+                                            <pre class="mb-1" style="font-size: 12px; white-space: pre-wrap;">{{ h.old_data }}</pre>
+                                            <strong>Sesudah:</strong><br>
+                                            <pre style="font-size: 12px; white-space: pre-wrap;">{{ h.new_data }}</pre>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td><small>{{ h.notes or '-' }}</small></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="p-4 text-center text-muted">
+                Belum ada riwayat perubahan untuk trial ini.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - FormDX v1.0{% endblock %}
+
+{% block content %}
+<!-- Professional Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Dashboard R&D</h2>
+        <p class="text-muted mb-0">FormDX • Research & Development Management System</p>
+    </div>
+    <div class="text-end">
+        <div class="text-muted small">Hari ini</div>
+        <div class="fw-semibold">{{ current_date }}</div>
+    </div>
+</div>
+
+<!-- KPI Cards - Professional R&D Style -->
+<div class="row g-3 mb-5 justify-content-center">
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="mb-2">
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
+                        <i class="bi bi-box-seam fs-5"></i>
+                    </span>
+                </div>
+                <h2 class="fw-bold mb-1">{{ total_materials }}</h2>
+                <p class="text-muted small mb-0">Total Bahan Baku</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="mb-2">
+                    <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
+                        <i class="bi bi-journal-text fs-5"></i>
+                    </span>
+                </div>
+                <h2 class="fw-bold mb-1">{{ total_trials }}</h2>
+                <p class="text-muted small mb-0">Total Trial</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm h-100 border-start border-warning border-3">
+            <div class="card-body text-center py-4">
+                <div class="mb-2">
+                    <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">
+                        <i class="bi bi-exclamation-triangle fs-5"></i>
+                    </span>
+                </div>
+                <h2 class="fw-bold mb-1 text-warning">{{ low_stock_count }}</h2>
+                <p class="text-muted small mb-0">Stok Menipis</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <div class="mb-2">
+                    <span class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill">
+                        <i class="bi bi-pencil-square fs-5"></i>
+                    </span>
+                </div>
+                <h2 class="fw-bold mb-1">{{ draft_trials }}</h2>
+                <p class="text-muted small mb-0">Trial Draft</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm h-100 border-start border-danger border-3">
+            <div class="card-body text-center py-4">
+                <div class="mb-2">
+                    <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">
+                        <i class="bi bi-calendar-x fs-5"></i>
+                    </span>
+                </div>
+                <h2 class="fw-bold mb-1 text-danger">{{ expiring_soon_count }}</h2>
+                <p class="text-muted small mb-0">Mendekati ED</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="mb-4">
+    <h6 class="text-uppercase text-muted fw-bold small mb-3">Quick Actions</h6>
+    <div class="row g-3">
+        <div class="col-md-3">
+            <a href="{{ url_for('raw_materials') }}" class="btn btn-outline-primary w-100 py-3 d-flex flex-column align-items-center justify-content-center shadow-sm">
+                <i class="bi bi-box-seam fs-3 mb-2"></i>
+                <span class="fw-semibold">Manajemen Bahan Baku</span>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('create_trial') }}" class="btn btn-outline-success w-100 py-3 d-flex flex-column align-items-center justify-content-center shadow-sm">
+                <i class="bi bi-plus-circle fs-3 mb-2"></i>
+                <span class="fw-semibold">Buat Trial Baru</span>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('trials_list') }}" class="btn btn-outline-info w-100 py-3 d-flex flex-column align-items-center justify-content-center shadow-sm">
+                <i class="bi bi-journal-text fs-3 mb-2"></i>
+                <span class="fw-semibold">Daftar Trial</span>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('raw_materials') }}" class="btn btn-outline-warning w-100 py-3 d-flex flex-column align-items-center justify-content-center shadow-sm">
+                <i class="bi bi-exclamation-triangle fs-3 mb-2"></i>
+                <span class="fw-semibold">Cek Stok Menipis</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Low Stock -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-exclamation-triangle text-warning me-2"></i><strong>Peringatan Stok Menipis</strong></span>
+                <a href="{{ url_for('raw_materials', low_stock=1) }}" class="btn btn-sm btn-outline-warning">Lihat Semua</a>
+            </div>
+            <div class="card-body">
+                {% if low_stock_materials %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr><th>Kode</th><th>Nama Bahan</th><th class="text-end">Stok</th><th class="text-end">Min</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for mat in low_stock_materials %}
+                            <tr>
+                                <td><strong>{{ mat.code }}</strong></td>
+                                <td>{{ mat.name }}</td>
+                                <td class="text-end text-danger">{{ mat.current_stock }} {{ mat.unit }}</td>
+                                <td class="text-end">{{ mat.min_stock }} {{ mat.unit }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-success">
+                    <i class="bi bi-check-circle display-5"></i>
+                    <p class="mt-2 mb-0">Semua stok bahan baku dalam kondisi aman.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Expiring Materials Warning -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                <div>
+                    <i class="bi bi-calendar-x text-danger me-2"></i>
+                    <span class="fw-bold">Bahan Baku Mendekati / Sudah ED</span>
+                </div>
+                <a href="{{ url_for('raw_materials') }}" class="btn btn-sm btn-outline-danger">Lihat Semua</a>
+            </div>
+            <div class="card-body pt-0">
+                {% if expiring_materials %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Kode</th>
+                                <th>Nama Bahan</th>
+                                <th class="text-center">ED</th>
+                                <th class="text-end">Stok</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mat in expiring_materials %}
+                            <tr>
+                                <td><strong class="text-primary">{{ mat.code }}</strong></td>
+                                <td>{{ mat.name }}</td>
+                                <td class="text-center">
+                                    {% if mat.expiry_date %}
+                                        <span class="badge bg-warning text-dark">{{ mat.expiry_date }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">{{ mat.current_stock }} {{ mat.unit }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <p class="mb-0">Tidak Ada Bahan Baku ED</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Produk & Jumlah Formula -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                <div>
+                    <i class="bi bi-boxes text-success me-2"></i>
+                    <span class="fw-bold">Produk & Jumlah Formula</span>
+                </div>
+                <a href="{{ url_for('trials_list') }}" class="btn btn-sm btn-outline-success">Lihat Semua</a>
+            </div>
+            <div class="card-body pt-0">
+                {% if product_formulas %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nama Produk</th>
+                                <th class="text-center">Jumlah Formula</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in product_formulas %}
+                            <tr>
+                                <td class="fw-semibold">{{ item.project_name }}</td>
+                                <td class="text-center">
+                                    <span class="badge bg-success bg-opacity-10 text-success fw-normal px-3 py-1">
+                                        {{ item.formula_count }} Formula
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <p class="mb-0">Belum ada data trial.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

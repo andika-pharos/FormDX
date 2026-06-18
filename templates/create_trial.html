@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Buat Trial Baru - FormDX v1.0{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Buat Catatan Trial Formulasi Baru</h2>
+
+<form method="post">
+    <div class="card mb-4">
+        <div class="card-header"><strong>Informasi Trial</strong></div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Tanggal Trial *</label>
+                    <input type="date" name="trial_date" class="form-control" value="{{ today }}" required>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Nama Produk *</label>
+                    <input type="text" name="project_name" class="form-control uppercase" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Ukuran Batch</label>
+                    <div class="input-group">
+                        <input type="number" step="0.01" name="batch_size_value" class="form-control" value="1000">
+                        <select name="batch_size_unit" class="form-select">
+                            <option value="tablet">tablet</option>
+                            <option value="kapsul">kapsul</option>
+                            <option value="mL">mL</option>
+                            <option value="L">L</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Scheme</label>
+                    <input type="number" name="scheme" class="form-control" value="1">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tahap</label>
+                    <select name="tahap" class="form-select">
+                        <option value="F1">F1</option>
+                        <option value="F2">F2</option>
+                        <option value="F3">F3</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Tujuan / Objective</label>
+                    <textarea name="objective" class="form-control" rows="2" placeholder="Tujuan percobaan formulasi..."></textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Prosedur Pembuatan</label>
+                    <textarea name="procedure" class="form-control" rows="4" placeholder="Langkah-langkah pembuatan..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Komposisi dengan Autocomplete -->
+    <div class="card mb-4">
+        <div class="card-header"><strong>Komposisi Bahan Baku</strong></div>
+        <div class="card-body">
+            <div id="ingredient-list"></div>
+            <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addIngredientRow()">
+                <i class="bi bi-plus-lg"></i> Tambah Bahan
+            </button>
+
+            <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" name="update_stock" id="updateStock" checked>
+                <label class="form-check-label" for="updateStock">
+                    <strong>Update stok otomatis</strong> (catat ke Kartu Stok)
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between">
+        <a href="{{ url_for('trials_list') }}" class="btn btn-secondary">Batal</a>
+        <button type="submit" class="btn btn-success">Simpan Trial</button>
+    </div>
+</form>
+
+<script>
+let rowIndex = 0;
+
+function addIngredientRow() {
+    const container = document.getElementById('ingredient-list');
+    const div = document.createElement('div');
+    div.className = 'border rounded p-3 mb-3 bg-light';
+    div.innerHTML = `
+        <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small">Cari Bahan Baku</label>
+                <input type="text" class="form-control form-control-sm search-input" placeholder="Ketik minimal 2 huruf..." onkeyup="searchMaterial(this, ${rowIndex})">
+                <input type="hidden" name="raw_material_id[]" id="mat_id_${rowIndex}">
+                <div id="search_result_${rowIndex}" class="list-group position-absolute" style="z-index: 1000; max-height: 200px; overflow-y: auto;"></div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Qty per Satuan</label>
+                <input type="number" step="0.001" name="qty_per_small_unit[]" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Satuan</label>
+                <select name="small_unit[]" class="form-select form-select-sm">
+                    <option value="mg">mg</option>
+                    <option value="mL">mL</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Fase</label>
+                <input type="text" name="phase[]" class="form-control form-control-sm" value="Fase Utama">
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.border').remove()">×</button>
+            </div>
+        </div>
+        <div class="mt-2 lot-container">
+            <input type="text" name="lot_number[]" class="form-control form-control-sm" placeholder="No. LSA (opsional)">
+        </div>
+    `;
+    container.appendChild(div);
+    rowIndex++;
+}
+
+function searchMaterial(inputElement, index) {
+    const query = inputElement.value.trim();
+    const resultDiv = document.getElementById('search_result_' + index);
+    if (query.length < 2) {
+        resultDiv.innerHTML = '';
+        return;
+    }
+    fetch('/api/search_materials?q=' + encodeURIComponent(query))
+        .then(res => res.json())
+        .then(data => {
+            resultDiv.innerHTML = '';
+            data.forEach(item => {
+                const a = document.createElement('a');
+                a.href = '#';
+                a.className = 'list-group-item list-group-item-action py-1';
+                a.innerHTML = `<strong>${item.code}</strong> - ${item.name} (Stok: ${item.current_stock} ${item.unit})`;
+                a.onclick = (e) => {
+                    e.preventDefault();
+                    inputElement.value = `${item.code} - ${item.name}`;
+                    document.getElementById('mat_id_' + index).value = item.id;
+                    
+                    // Fetch daftar No. LSA untuk bahan ini
+                    fetch('/api/material_lots/' + item.id)
+                        .then(res => res.json())
+                        .then(lots => {
+                            const lotContainer = inputElement.closest('.border').querySelector('.lot-container');
+                            if (lotContainer) lotContainer.innerHTML = '';
+
+                            if (lots.length > 0) {
+                                const select = document.createElement('select');
+                                select.name = 'lot_number[]';
+                                select.className = 'form-select form-select-sm';
+                                
+                                const defaultOpt = document.createElement('option');
+                                defaultOpt.value = '';
+                                defaultOpt.textContent = '-- Pilih No. LSA --';
+                                select.appendChild(defaultOpt);
+
+                                lots.forEach(lot => {
+                                    const opt = document.createElement('option');
+                                    opt.value = lot.lsa_number;
+                                    opt.textContent = `${lot.lsa_number} (ED: ${lot.expiry_date || '-'})`;
+                                    select.appendChild(opt);
+                                });
+
+                                if (lotContainer) {
+                                    lotContainer.appendChild(select);
+                                }
+                            } else {
+                                // Jika tidak ada lot, tetap pakai input teks
+                                const input = document.createElement('input');
+                                input.type = 'text';
+                                input.name = 'lot_number[]';
+                                input.className = 'form-control form-control-sm';
+                                input.placeholder = 'No. LSA (opsional)';
+                                if (lotContainer) lotContainer.appendChild(input);
+                            }
+                        });
+                    
+                    resultDiv.innerHTML = '';
+                };
+                resultDiv.appendChild(a);
+            });
+        });
+}
+
+window.onload = function() {
+    addIngredientRow();
+}
+</script>
+{% endblock %}

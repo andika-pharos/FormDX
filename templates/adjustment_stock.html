@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Adjustment Stok - {{ material.name }} | FormDX{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>Adjustment Stok</h2>
+        <p class="text-muted mb-0">
+            <strong>{{ material.code }}</strong> - {{ material.name }} 
+            (Stok Saat Ini: <strong>{{ "%.2f"|format(material.current_stock) }} {{ material.unit }}</strong>)
+        </p>
+    </div>
+    <a href="{{ url_for('stock_card', material_id=material.id) }}" class="btn btn-outline-secondary">Kembali ke Kartu Stok</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Jenis Adjustment *</label>
+                    <select name="adjustment_type" class="form-select" required>
+                        <option value="IN">Penambahan Stok (+)</option>
+                        <option value="OUT">Pengurangan Stok (-)</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Jumlah *</label>
+                    <div class="input-group">
+                        <input type="number" step="0.01" name="quantity" class="form-control" required min="0.01">
+                        <span class="input-group-text">{{ material.unit }}</span>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">No. LPB</label>
+                    <input type="text" name="lpb_number" class="form-control" placeholder="Contoh: B482917">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">No. LSA</label>
+                    <input type="text" name="lsa_number" class="form-control" placeholder="Contoh: O139204">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Alasan Adjustment *</label>
+                    <select name="reason" class="form-select" required>
+                        <option value="Stock Opname">Stock Opname</option>
+                        <option value="Kerusakan / Rusak">Kerusakan / Rusak</option>
+                        <option value="Kadaluarsa">Kadaluarsa</option>
+                        <option value="Koreksi Sistem">Koreksi Sistem</option>
+                        <option value="Lainnya">Lainnya</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Catatan / Keterangan</label>
+                    <textarea name="notes" class="form-control" rows="3" placeholder="Keterangan tambahan adjustment..."></textarea>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-warning">
+                    <i class="bi bi-arrow-repeat"></i> Lakukan Adjustment
+                </button>
+                <a href="{{ url_for('stock_card', material_id=material.id) }}" class="btn btn-outline-secondary ms-2">Batal</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="mt-3 text-muted small">
+    <i class="bi bi-info-circle"></i> 
+    Adjustment akan tercatat di Kartu Stok sebagai tipe <strong>ADJUSTMENT</strong>.
+</div>
+{% endblock %}

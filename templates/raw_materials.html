@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}Manajemen Bahan Baku - FormDX v1.0{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>Manajemen Bahan Baku</h2>
+        <p class="text-muted mb-0">Master data inventori bahan baku untuk formulasi R&D</p>
+    </div>
+    <div>
+        <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#addMasterDataModal">
+            <i class="bi bi-database-add"></i> Tambah Master Data
+        </button>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
+            <i class="bi bi-plus-lg"></i> Tambah Bahan + Stok
+        </button>
+    </div>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <input type="text" name="search" class="form-control" placeholder="Cari kode, nama, supplier..." value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" name="low_stock" value="1" id="lowStock" {% if filter_low == '1' %}checked{% endif %}>
+                    <label class="form-check-label" for="lowStock">Tampilkan hanya stok menipis</label>
+                </div>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a href="{{ url_for('raw_materials') }}" class="btn btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle text-center">
+            <thead class="table-light text-center">
+                <tr>
+                    <th>Kode</th>
+                    <th>Nama Bahan</th>
+                    <th>Manufacturer</th>
+                    <th>Supplier</th>
+                    <th>Stok</th>
+                    <th>Satuan</th>
+                    <th>ED</th>
+                    <th>Jumlah Lot</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mat in materials %}
+                <tr>
+                    <td><strong>{{ mat.code }}</strong></td>
+                    <td>
+                        {{ mat.name }}
+                        {% if mat.description %}<br><small class="text-muted">{{ mat.description[:60] }}{% if mat.description|length > 60 %}...{% endif %}</small>{% endif %}
+                    </td>
+                    <td>{{ mat.manufacturer or '-' }}</td>
+                    <td>{{ mat.supplier or '-' }}</td>
+                    <td>
+                        {% if mat.current_stock < mat.min_stock %}
+                            <span class="text-danger fw-bold">{{ "%.2f"|format(mat.current_stock) }}</span>
+                        {% else %}
+                            {{ "%.2f"|format(mat.current_stock) }}
+                        {% endif %}
+                    </td>
+                    <td>{{ mat.unit }}</td>
+                    <td>
+                        {% if mat.expiry_date %}
+                            <span class="badge bg-warning text-dark">{{ mat.expiry_date }}</span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-info text-dark">{{ mat.lot_count or 0 }}</span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('stock_card', material_id=mat.id) }}" class="btn btn-sm btn-outline-info me-1">Kartu Stok</a>
+                        <a href="{{ url_for('adjustment_stock', material_id=mat.id) }}" class="btn btn-sm btn-warning me-1">Adjustment</a>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ mat.id }}">Edit</button>
+                        <form method="post" action="{{ url_for('delete_raw_material', id=mat.id) }}" class="d-inline" onsubmit="return confirm('Hapus bahan ini?')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+                        </form>
+                    </td>
+                </tr>
+
+                <!-- Edit Modal -->
+                <div class="modal fade" id="editModal{{ mat.id }}" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <form method="post" action="{{ url_for('edit_raw_material', id=mat.id) }}">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Edit Bahan Baku: {{ mat.code }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Nama Bahan *</label>
+                                            <input type="text" name="name" class="form-control" value="{{ mat.name }}" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Satuan</label>
+                                            <select name="unit" class="form-select">
+                                                <option value="g" {% if mat.unit == 'g' %}selected{% endif %}>gram (g)</option>
+                                                <option value="kg" {% if mat.unit == 'kg' %}selected{% endif %}>kilogram (kg)</option>
+                                                <option value="mg" {% if mat.unit == 'mg' %}selected{% endif %}>miligram (mg)</option>
+                                                <option value="mL" {% if mat.unit == 'mL' %}selected{% endif %}>mililiter (mL)</option>
+                                                <option value="L" {% if mat.unit == 'L' %}selected{% endif %}>liter (L)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Stok Saat Ini</label>
+                                            <input type="number" step="0.01" name="current_stock" class="form-control" value="{{ mat.current_stock }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Stok Minimum</label>
+                                            <input type="number" step="0.01" name="min_stock" class="form-control" value="{{ mat.min_stock }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Tanggal Kadaluarsa (ED)</label>
+                                            <input type="date" name="expiry_date" class="form-control" value="{{ mat.expiry_date or '' }}">
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label class="form-label">Deskripsi / Fungsi Bahan</label>
+                                            <textarea name="description" class="form-control" rows="2">{{ mat.description or '' }}</textarea>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label class="form-label">No. LSA</label>
+                                            <input type="text" name="lsa_number" class="form-control" value="{{ mat.lsa_number or '' }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">No. LPB</label>
+                                            <input type="text" name="lpb_number" class="form-control" value="{{ mat.lpb_number or '' }}">
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label class="form-label">Manufacturer</label>
+                                            <input type="text" name="manufacturer" class="form-control" value="{{ mat.manufacturer or '' }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Supplier</label>
+                                            <input type="text" name="supplier" class="form-control" value="{{ mat.supplier or '' }}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                    <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Material Modal -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('add_raw_material') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tambah Bahan + Stok Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Pilih Kode Bahan (dari Master Data) *</label>
+                            <select name="material_id" id="materialSelect" class="form-select" required>
+                                <option value="">-- Pilih Kode Bahan --</option>
+                                {% for mat in all_materials %}
+                                <option value="{{ mat.id }}"
+                                        data-code="{{ mat.code }}"
+                                        data-name="{{ mat.name }}"
+                                        data-description="{{ mat.description or '' }}"
+                                        data-manufacturer="{{ mat.manufacturer or '' }}"
+                                        data-supplier="{{ mat.supplier or '' }}">
+                                    {{ mat.code }} - {{ mat.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" name="code" id="selectedCode">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nama Bahan</label>
+                            <input type="text" name="name" id="selectedName" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Manufacturer / Pabrikan</label>
+                            <input type="text" name="manufacturer" id="selectedManufacturer" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Supplier</label>
+                            <input type="text" name="supplier" id="selectedSupplier" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Satuan</label>
+                            <select name="unit" class="form-select">
+                                <option value="g">gram (g)</option>
+                                <option value="kg">kilogram (kg)</option>
+                                <option value="mg">miligram (mg)</option>
+                                <option value="mL">mililiter (mL)</option>
+                                <option value="L">liter (L)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Stok Awal</label>
+                            <input type="number" step="0.01" name="current_stock" class="form-control" value="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Stok Minimum</label>
+                            <input type="number" step="0.01" name="min_stock" class="form-control" value="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Tanggal Kadaluarsa (ED)</label>
+                            <input type="date" name="expiry_date" class="form-control">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Deskripsi / Fungsi Bahan</label>
+                            <textarea name="description" id="selectedDescription" class="form-control" rows="2" placeholder="Contoh: Filler / Diluent untuk tablet"></textarea>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">No. LPB</label>
+                            <input type="text" name="lpb_number" class="form-control" placeholder="Contoh: B482917">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">No. LSA</label>
+                            <input type="text" name="lsa_number" class="form-control" placeholder="Contoh: O139204">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Simpan Bahan Baku</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Master Data Modal -->
+<div class="modal fade" id="addMasterDataModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('add_raw_material') }}">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Tambah Master Data Bahan Baku</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info small">
+                        Form ini hanya untuk menambahkan data master bahan baku (Kode, Nama, Manufacturer, Supplier). 
+                        Stok dan No. LPB/LSA ditambahkan melalui menu <strong>"Tambah Bahan + Stok"</strong>.
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Kode Bahan *</label>
+                            <input type="text" name="code" class="form-control" placeholder="Contoh: MCC-001" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nama Bahan *</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Deskripsi / Fungsi Bahan</label>
+                            <textarea name="description" class="form-control" rows="2" placeholder="Contoh: Microcrystalline Cellulose - Filler / Diluent"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Manufacturer / Pabrikan</label>
+                            <input type="text" name="manufacturer" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Supplier</label>
+                            <input type="text" name="supplier" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Master Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('materialSelect');
+    if (!select) return;
+
+    select.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        
+        if (!selectedOption || !selectedOption.value) {
+            document.getElementById('selectedCode').value = '';
+            document.getElementById('selectedName').value = '';
+            document.getElementById('selectedManufacturer').value = '';
+            document.getElementById('selectedSupplier').value = '';
+            return;
+        }
+
+        document.getElementById('selectedCode').value = selectedOption.dataset.code || '';
+        document.getElementById('selectedName').value = selectedOption.dataset.name || '';
+        document.getElementById('selectedManufacturer').value = selectedOption.dataset.manufacturer || '';
+        document.getElementById('selectedSupplier').value = selectedOption.dataset.supplier || '';
+        document.getElementById('selectedDescription').value = selectedOption.dataset.description || '';
+    });
+});
+</script>
+
+{% endblock %}
+
+        if (!searchInput || !resultDiv) return;
+
+        // Remove old listeners
+        const newInput = searchInput.cloneNode(true);
+        searchInput.parentNode.replaceChild(newInput, searchInput);
+
+        newInput.addEventListener('input', function() {
+            const q = this.value.trim();
+            if (q.length < 2) {
+                resultDiv.style.display = 'none';
+                return;
+            }
+
+            fetch('/api/search_materials?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    resultDiv.innerHTML = '';
+                    resultDiv.style.display = 'block';
+
+                    data.forEach(item => {
+                        const a = document.createElement('a');
+                        a.href = '#';
+                        a.className = 'list-group-item list-group-item-action py-1 small';
+                        a.innerHTML = `<strong>${item.code}</strong> — ${item.name}`;
+
+                        a.onclick = function(e) {
+                            e.preventDefault();
+
+                            newInput.value = `${item.code} - ${item.name}`;
+                            if (codeInput) codeInput.value = item.code;
+                            if (nameInput) nameInput.value = item.name;
+
+                            // Auto-fill Manufacturer & Supplier
+                            const mInput = modalEl.querySelector('input[name="manufacturer"]');
+                            const sInput = modalEl.querySelector('input[name="supplier"]');
+                            if (mInput) mInput.value = item.manufacturer || '';
+                            if (sInput) sInput.value = item.supplier || '';
+
+                            resultDiv.style.display = 'none';
+                        };
+
+                        resultDiv.appendChild(a);
+                    });
+                });
+        });
+
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function hide(e) {
+            if (!newInput.contains(e.target) && !resultDiv.contains(e.target)) {
+                resultDiv.style.display = 'none';
+                document.removeEventListener('click', hide);
+            }
+        }, { once: true });
+    });
+});
+</script>

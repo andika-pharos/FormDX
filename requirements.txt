@@ -1,0 +1,7 @@
+Flask==3.0.3
+gunicorn
+reportlab==4.2.2
+Werkzeug==3.0.3
+Jinja2==3.1.4
+openpyxl==3.1.5
+python-dotenv
