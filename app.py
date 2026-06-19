@@ -1684,77 +1684,10 @@ def adjustment_stock(material_id):
     return render_template('adjustment_stock.html', material=material)
 
 # ==================== INISIALISASI DATABASE ====================
-
-def init_db():
-    conn = get_db()
-    c = conn.cursor()
-
-    # Tabel Bahan Baku
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS raw_materials (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            code TEXT UNIQUE NOT NULL,
-            name TEXT NOT NULL,
-            description TEXT,
-            manufacturer TEXT,
-            supplier TEXT,
-            unit TEXT DEFAULT 'g',
-            current_stock REAL DEFAULT 0,
-            min_stock REAL DEFAULT 0,
-            price_per_unit REAL DEFAULT 0,
-            expiry_date TEXT,
-            lpb_number TEXT,
-            lsa_number TEXT,
-            location TEXT DEFAULT 'R&D Coolroom',
-            created_at TEXT,
-            updated_at TEXT
-        )
-    ''')
-
-    # Tabel Pergerakan Stok
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS stock_movements (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            raw_material_id INTEGER,
-            movement_type TEXT NOT NULL,
-            quantity REAL NOT NULL,
-            unit TEXT,
-            reference_type TEXT,
-            reference_code TEXT,
-            lpb_number TEXT,
-            lsa_number TEXT,
-            expiry_date TEXT,
-            project_name TEXT,
-            notes TEXT,
-            created_at TEXT,
-            FOREIGN KEY (raw_material_id) REFERENCES raw_materials (id)
-        )
-    ''')
-
-    # Tabel Trial
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS trials (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            trial_code TEXT,
-            master_batch_id TEXT,
-            trial_date TEXT,
-            project_name TEXT,
-            formulator TEXT,
-            status TEXT DEFAULT 'Draft',
-            notes TEXT,
-            created_at TEXT,
-            updated_at TEXT
-        )
-    ''')
-
-    conn.commit()
-    
-# ==================== INISIALISASI DATABASE ====================
 init_db()
 
 
 if __name__ == '__main__':
-    # Hanya untuk development lokal
     with app.app_context():
         add_sample_data()
     
