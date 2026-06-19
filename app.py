@@ -66,91 +66,102 @@ def init_db():
     conn = get_db()
     c = conn.cursor()
 
-    # Tabel Bahan Baku
+    # ==================== TABEL BAHAN BAKU ====================
     c.execute('''
         CREATE TABLE IF NOT EXISTS raw_materials (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            code TEXT UNIQUE NOT NULL, name TEXT NOT NULL, description TEXT,
-            supplier TEXT, manufacturer TEXT, unit TEXT DEFAULT 'g',
-            current_stock REAL DEFAULT 0, min_stock REAL DEFAULT 0,
-            price_per_unit REAL DEFAULT 0, expiry_date TEXT,
-            lpb_number TEXT, lsa_number TEXT, location TEXT DEFAULT 'R&D Coolroom',
-            created_at TEXT, updated_at TEXT
+            code TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            manufacturer TEXT,
+            supplier TEXT,
+            unit TEXT DEFAULT 'g',
+            current_stock REAL DEFAULT 0,
+            min_stock REAL DEFAULT 0,
+            price_per_unit REAL DEFAULT 0,
+            expiry_date TEXT,
+            lpb_number TEXT,
+            lsa_number TEXT,
+            location TEXT DEFAULT 'R&D Coolroom',
+            created_at TEXT,
+            updated_at TEXT
         )
     ''')
 
-    # Tabel Trial
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS trials (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            trial_code TEXT UNIQUE NOT NULL, master_batch_id TEXT,
-            trial_date TEXT NOT NULL, project_name TEXT NOT NULL,
-            objective TEXT, formulator TEXT,
-            batch_size_value REAL DEFAULT 0, batch_size_unit TEXT DEFAULT 'tablet',
-            scheme INTEGER DEFAULT 1, tahap TEXT DEFAULT 'F1',
-            procedure TEXT, observations TEXT, results TEXT, conclusion TEXT,
-            status TEXT DEFAULT 'Draft', created_at TEXT, updated_at TEXT
-        )
-    ''')
-
-    # Tabel Komposisi
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS trial_ingredients (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            trial_id INTEGER NOT NULL, raw_material_id INTEGER NOT NULL,
-            quantity REAL NOT NULL, lot_number TEXT, notes TEXT,
-            qty_per_small_unit REAL, small_unit TEXT, phase TEXT DEFAULT 'Fase Utama',
-            FOREIGN KEY (trial_id) REFERENCES trials (id) ON DELETE CASCADE
-        )
-    ''')
-
-    # Tabel Stock Movements (Kartu Stok)
+    # ==================== TABEL PERGERAKAN STOK ====================
     c.execute('''
         CREATE TABLE IF NOT EXISTS stock_movements (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            raw_material_id INTEGER NOT NULL,
-            movement_type TEXT NOT NULL,           -- 'IN' atau 'OUT'
+            raw_material_id INTEGER,
+            movement_type TEXT NOT NULL,
             quantity REAL NOT NULL,
-            unit TEXT NOT NULL,
-            reference_type TEXT,                   -- 'TRIAL', 'INBOUND', 'ADJUSTMENT'
+            unit TEXT,
+            reference_type TEXT,
+            reference_code TEXT,
             reference_id INTEGER,
-            reference_code TEXT,                   -- master_batch_id atau trial_code
-            project_name TEXT,
-            notes TEXT,
-            created_at TEXT,
             lpb_number TEXT,
             lsa_number TEXT,
             expiry_date TEXT,
-            FOREIGN KEY (raw_material_id) REFERENCES raw_materials(id)
+            project_name TEXT,
+            notes TEXT,
+            created_at TEXT,
+            FOREIGN KEY (raw_material_id) REFERENCES raw_materials (id)
         )
     ''')
 
-    # Tambah kolom baru jika tabel sudah ada (untuk backward compatibility)
-    try:
-        c.execute("ALTER TABLE stock_movements ADD COLUMN lpb_number TEXT")
-    except:
-        pass
-    try:
-        c.execute("ALTER TABLE stock_movements ADD COLUMN lsa_number TEXT")
-    except:
-        pass
-    try:
-        c.execute("ALTER TABLE stock_movements ADD COLUMN expiry_date TEXT")
-    except:
-        pass
+    # ==================== TABEL TRIAL ====================
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS trials (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trial_code TEXT,
+            master_batch_id TEXT,
+            trial_date TEXT,
+            project_name TEXT,
+            objective TEXT,
+            formulator TEXT,
+            batch_size_value REAL DEFAULT 0,
+            batch_size_unit TEXT DEFAULT 'tablet',
+            scheme INTEGER DEFAULT 1,
+            tahap TEXT DEFAULT 'F1',
+            procedure TEXT,
+            observations TEXT,
+            results TEXT,
+            conclusion TEXT,
+            status TEXT DEFAULT 'Draft',
+            created_at TEXT,
+            updated_at TEXT
+        )
+    ''')
 
-    # Tabel Riwayat Perubahan Trial (Audit Log)
+    # ==================== TABEL KOMPOSISI BAHAN DALAM TRIAL ====================
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS trial_ingredients (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trial_id INTEGER NOT NULL,
+            raw_material_id INTEGER NOT NULL,
+            quantity REAL NOT NULL,
+            lot_number TEXT,
+            notes TEXT,
+            qty_per_small_unit REAL,
+            small_unit TEXT,
+            phase TEXT DEFAULT 'Fase Utama',
+            FOREIGN KEY (trial_id) REFERENCES trials (id) ON DELETE CASCADE,
+            FOREIGN KEY (raw_material_id) REFERENCES raw_materials (id)
+        )
+    ''')
+
+    # ==================== TABEL RIWAYAT PERUBAHAN TRIAL ====================
     c.execute('''
         CREATE TABLE IF NOT EXISTS trial_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             trial_id INTEGER NOT NULL,
-            action TEXT NOT NULL,           -- CREATE, UPDATE, DELETE
+            action TEXT NOT NULL,
             changed_by TEXT,
             changed_at TEXT,
             old_data TEXT,
             new_data TEXT,
             notes TEXT,
-            FOREIGN KEY (trial_id) REFERENCES trials(id) ON DELETE CASCADE
+            FOREIGN KEY (trial_id) REFERENCES trials (id) ON DELETE CASCADE
         )
     ''')
 
