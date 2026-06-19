@@ -1749,16 +1749,17 @@ def init_db():
 
     conn.commit()
     
-# ==================== INISIALISASI DATABASE (WAJIB UNTUK PRODUCTION) ====================
+# ==================== INISIALISASI DATABASE ====================
 init_db()
 
 
 if __name__ == '__main__':
-    # Hanya jalankan di development (lokal)
+    # Hanya untuk development lokal
     with app.app_context():
-        add_sample_data()   # Hanya dijalankan di lokal, bukan di Railway
+        add_sample_data()
+    
     print("\n" + "="*65)
-    print(" FormDX v1.0 - Clean Edition (Development Mode)")
+    print(" FormDX v1.0 - Clean Edition")
     print(" http://127.0.0.1:5000")
     print(" Login: formulator / rd2026")
     print("="*65 + "\n")
